@@ -134,13 +134,13 @@ Module.register("MMM-Tracking", {
         carrierName = carrier;
     }
 
-    getTableLine(table, carrierName);
+    this.getTableLine(table, carrierName);
 
     if(Object.keys(this.trackingResults[carrier]).length === 0){
-      getTableLine(table, "None");
+      this.getTableLine(table, "None");
     } else {
       for(key in this.trackingResults[carrier]) {
-        getTableLine(table, key, this.trackingResults[carrier][key]);
+        this.getTableLine(table, key, this.trackingResults[carrier][key]);
       }
     }
   },
@@ -166,13 +166,13 @@ Module.register("MMM-Tracking", {
     wrapper.appendChild(table);
 
      //Fedex
-    getHtmlForCarrier("fedex", table);
+    this.getHtmlForCarrier("fedex", table);
 
     //UPS
-    getHtmlForCarrier("ups", table);
+    this.getHtmlForCarrier("ups", table);
 
     //USPS
-    getHtmlForCarrier("usps", table);
+    this.getHtmlForCarrier("usps", table);
 
     return wrapper;
   },
@@ -212,18 +212,20 @@ Module.register("MMM-Tracking", {
   },
 
   carrierProcessingFinishedCallback: function() {
-    if(!allTrackingSourcesCompleted()) {
+    Log.info(this);
+    Log.info(self);
+    if(!this.allTrackingSourcesCompleted()) {
       return;
     }
 
-    if(!allTrackingSourcesSucceeded) {
+    if(!this.allTrackingSourcesSucceeded) {
       self.scheduleUpdate(self.config.retryDelay);
       return;
     }
 
     this.show(this.config.animationSpeed, { lockString: this.identifier });
     this.loaded = true;
-    self.scheduleUpdate();
+    this.scheduleUpdate();
     this.updateDom(this.config.animationSpeed);
   },
 
@@ -231,7 +233,7 @@ Module.register("MMM-Tracking", {
     //TODO: implement UPS and USPS tracking here
     this.trackingSourcesStatus.ups = "succeeded";
     this.trackingSourcesStatus.usps = "succeeded";
-    this.processFedexTrackingInfo(data.fedex, carrierProcessingFinishedCallback);
+    this.processFedexTrackingInfo(data.fedex, this.carrierProcessingFinishedCallback.bind(this));
   },
 
   processFedexTrackingInfo: function (trackingNumbers, callback) {
@@ -254,9 +256,10 @@ Module.register("MMM-Tracking", {
         trackingInfoList:[]
       }
     };
+    
 
-    trackinNumbers.forEach(function(trackingNumber){
-      data.trackingInfoList.push({
+    trackingNumbers.forEach(function(trackingNumber){
+      data.TrackPackagesRequest.trackingInfoList.push({
         trackNumberInfo:{
             trackingNumber:"" + trackingNumber,
             trackingQualifier:"",
@@ -277,11 +280,11 @@ Module.register("MMM-Tracking", {
         if (this.status === 200) {
           var result = JSON.parse(this.response);
           result.TrackPackagesResponse.packageList.forEach(function(package) {
-            this.trackingResults.fedex[package.displayTrackingNbr] = package.displayEstDeliveryDateTime;
+            self.trackingResults.fedex[package.displayTrackingNbr] = package.displayEstDeliveryDateTime;
           });
-          trackingSourcesStatus.fedex = "succeeded";
+          self.trackingSourcesStatus.fedex = "succeeded";
         } else {
-          trackingSourcesStatus.fedex = "failed";
+          self.trackingSourcesStatus.fedex = "failed";
           Log.error(self.name + ": Could not fetch fedex tracking info.");
         }
 
