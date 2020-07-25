@@ -1,5 +1,5 @@
 
-Module.register("tracking", {
+Module.register("MMM-Tracking", {
   // Default module config.
   defaults: {
     trackingNumbersUrl: "",
@@ -231,7 +231,7 @@ Module.register("tracking", {
     //TODO: implement UPS and USPS tracking here
     this.trackingSourcesStatus.ups = "succeeded";
     this.trackingSourcesStatus.usps = "succeeded";
-    processFedexTrackingInfo(data.fedex, carrierProcessingFinishedCallback);
+    this.processFedexTrackingInfo(data.fedex, carrierProcessingFinishedCallback);
   },
 
   processFedexTrackingInfo: function (trackingNumbers, callback) {
