@@ -4,7 +4,7 @@ Module.register("MMM-Tracking", {
   defaults: {
     trackingNumbersUrl: "",
     updateInterval: 60 * 60 * 1000, // every hour
-    tableClass: "large",
+    tableClass: "medium",
     lang: config.language,
     animationSpeed: 1000,
     initialLoadDelay: 0, // 0 seconds delay
@@ -12,9 +12,9 @@ Module.register("MMM-Tracking", {
   },
 
   // Define required scripts.
-  getStyles: function () {
-    return ["tracking.css"];
-  },
+  getStyles: function() {
+		return [ "MMM-Tracking.css" ]
+	},
 
   // Define start sequence.
   start: function () {
