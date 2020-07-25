@@ -8,7 +8,7 @@ Module.register("tracking", {
     lang: config.language,
     animationSpeed: 1000,
     initialLoadDelay: 0, // 0 seconds delay
-    retryDelay: 2500,
+    retryDelay: 2500
   },
 
   // Define required scripts.
@@ -115,7 +115,6 @@ Module.register("tracking", {
 
       table.appendChild(tableRow);
     }
-    tableRow
   },
 
   getHtmlForCarrier: function(carrier, table) {
@@ -133,7 +132,7 @@ Module.register("tracking", {
         break;
       default:
         carrierName = carrier;
-    },
+    }
 
     getTableLine(table, carrierName);
 
@@ -196,7 +195,7 @@ Module.register("tracking", {
 
     var trackingNumbersRequest = new XMLHttpRequest();
     trackingNumbersRequest.open("GET", proxyurl + url, true);
-    trackingNumbersRequest.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    trackingNumbersRequest.setRequestHeader("X-Requested-With", "XMLHttpRequest");
     trackingNumbersRequest.onreadystatechange = function () {
       if (this.readyState === 4) {
         if (this.status === 200) {
