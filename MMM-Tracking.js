@@ -85,6 +85,21 @@ Module.register("MMM-Tracking", {
 
     return true;
   },
+
+  getOrdinalSuffix: function(i) {
+    var j = i % 10,
+        k = i % 100;
+    if (j == 1 && k != 11) {
+        return i + "st";
+    }
+    if (j == 2 && k != 12) {
+        return i + "nd";
+    }
+    if (j == 3 && k != 13) {
+        return i + "rd";
+    }
+    return i + "th";
+  },
   
   getTableLine: function(table, cell1, cell2) {
     var tableRow = document.createElement("tr");
@@ -232,13 +247,13 @@ Module.register("MMM-Tracking", {
   processTrackingNumbers: function (data) {
     //TODO: implement UPS and USPS tracking here
     this.trackingSourcesStatus.ups = "succeeded";
-    this.trackingSourcesStatus.usps = "succeeded";
+    this.processUspsTrackingInfo(data.usps, this.carrierProcessingFinishedCallback.bind(this));
     this.processFedexTrackingInfo(data.fedex, this.carrierProcessingFinishedCallback.bind(this));
   },
 
   processFedexTrackingInfo: function (trackingNumbers, callback) {
     if (trackingNumbers.length === 0) {
-      this.trackingSourcesStatus.fedex = true;
+      this.trackingSourcesStatus.fedex = "succeeded";
       this.trackingResults.fedex[package.displayTrackingNbr] = package.displayEstDeliveryDateTime;
       return;
     }
@@ -293,10 +308,99 @@ Module.register("MMM-Tracking", {
     };
     fedexTrackingRequest.onerror = function() {
       trackingSourcesStatus.fedex = "failed";
+      callback();
       Log.error(self.name + ": fedex XMLHttpRequest failed.");
     };
     fedexTrackingRequest.send();
   },
+
+  procesUSPSTrackingResponse: function(responseText) {
+    parser=new DOMParser();
+    var dom = parser.parseFromString(responseText,"text/html");
+    
+    trackingResults = dom.getElementsByClassName('track-bar-container');
+
+    var self = this;
+
+    Array.from(trackingResults).forEach(function(node) {
+
+      try{
+        var trackingNumber = node.getElementsByClassName('tracking-number')[0].textContent.trim();
+      } catch(e) {
+        Log.error("DOM structure for usps tracking numbers has changed. Could not obtain tracing number.");
+      }
+
+      if(node.getElementsByClassName('delivery_delivered').length) {
+        self.trackingResults.usps[trackingNumber] = "Delivered";
+        return;
+      }
+
+      try{
+        var weekday = node.getElementsByClassName('day')[0].textContent;
+        var dayNumber = node.getElementsByClassName('date')[0].textContent;
+        dayNumber = self.getOrdinalSuffix(dayNumber);
+
+        var monthYearNode = node.getElementsByClassName('month_year')[0];
+        var monthNode = monthYearNode.getElementsByTagName("span")[0];
+
+        var monthString = monthNode.textContent.trim();
+
+        monthYearNode.removeChild(monthNode);
+
+        var hintNode = monthYearNode.getElementsByClassName("hint")[0];
+        monthYearNode.removeChild(hintNode);
+
+
+        var year = monthYearNode.textContent.trim();
+
+        var deliveryEstimateString = weekday + " " + monthString + " " + dayNumber + ", " + year;
+
+        self.trackingResults.usps[trackingNumber] = deliveryEstimateString;
+      } catch(e) {
+        Log.error("could not determine deliver date for usps tracking number " + trackingNumber + ". This is probably because of an an unexpected DOM format.")
+      }
+    });
+  },
+
+  processUspsTrackingInfo: function(trackingNumbers, callback) {
+    if (trackingNumbers.length === 0) {
+      this.trackingSourcesStatus.usps = "succeeded";
+      this.trackingResults.usps[package.displayTrackingNbr] = package.displayEstDeliveryDateTime;
+      return;
+    }
+
+    var proxyurl = "https://cors-anywhere.herokuapp.com/";
+    var url = "https://tools.usps.com/go/TrackConfirmAction?tRef=fullpage&tLc=3&text28777=&tLabels=";
+    
+    trackingNumbers.forEach(function(trackingNumber) {
+      url += trackingNumber + ","
+    });
+
+    var self = this;
+
+    var uspsTrackingRequest = new XMLHttpRequest();
+    uspsTrackingRequest.open("GET", proxyurl + url, true);
+    uspsTrackingRequest.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+    uspsTrackingRequest.onreadystatechange = function () {
+      if (this.readyState === 4) {
+        if (this.status === 200) {
+          self.procesUSPSTrackingResponse(this.responseText);
+          this.trackingSourcesStatus.usps = "succeeded";
+        } else {
+          self.trackingSourcesStatus.usps = "failed";
+          Log.error(self.name + ": Could not fetch usps tracking info.");
+        }
+
+        callback();
+      }
+    };
+    uspsTrackingRequest.onerror = function() {
+      trackingSourcesStatus.usps = "failed";
+      callback();
+      Log.error(self.name + ": usps XMLHttpRequest failed.");
+    };
+    uspsTrackingRequest.send();
+  }
 
   /* scheduleUpdate()
    * Schedule next update.
