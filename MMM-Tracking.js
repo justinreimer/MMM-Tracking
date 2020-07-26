@@ -385,7 +385,7 @@ Module.register("MMM-Tracking", {
       if (this.readyState === 4) {
         if (this.status === 200) {
           self.procesUSPSTrackingResponse(this.responseText);
-          this.trackingSourcesStatus.usps = "succeeded";
+          self.trackingSourcesStatus.usps = "succeeded";
         } else {
           self.trackingSourcesStatus.usps = "failed";
           Log.error(self.name + ": Could not fetch usps tracking info.");
@@ -400,7 +400,7 @@ Module.register("MMM-Tracking", {
       Log.error(self.name + ": usps XMLHttpRequest failed.");
     };
     uspsTrackingRequest.send();
-  }
+  },
 
   /* scheduleUpdate()
    * Schedule next update.
