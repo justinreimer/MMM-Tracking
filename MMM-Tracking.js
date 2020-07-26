@@ -295,7 +295,11 @@ Module.register("MMM-Tracking", {
         if (this.status === 200) {
           var result = JSON.parse(this.response);
           result.TrackPackagesResponse.packageList.forEach(function(package) {
-            self.trackingResults.fedex[package.displayTrackingNbr] = package.displayEstDeliveryDateTime;
+            if(package.keyStatus === "keyStatus") {
+              self.trackingResults.fedex[package.displayTrackingNbr] = "Delivered";
+            } else {
+              self.trackingResults.fedex[package.displayTrackingNbr] = package.displayEstDeliveryDateTime;
+            }
           });
           self.trackingSourcesStatus.fedex = "succeeded";
         } else {
