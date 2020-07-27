@@ -41,6 +41,7 @@ Module.register("MMM-Tracking", {
     if (notification === "MMM_TRACKING_GET_HTML_FOR_URL_FAILED") {
       Log.error("could not fetch html for carrier: " + payload.carrier);
       this.trackingResults[payload.carrier]["Error: "] = "Could not get html for scraping.";
+      this.trackingSourcesStatus[payload.carrier] = "failed";
     } else if (notification === "MMM_TRACKING_GET_HTML_FOR_URL_SUCCEEDED") {
       switch(payload.carrier) {
         case "ups":
@@ -253,7 +254,7 @@ Module.register("MMM-Tracking", {
           self.resetTrackingResults();
           self.processTrackingNumbers(JSON.parse(this.response));
         } else {
-           self.scheduleUpdate(self.config.retryDelay);
+          self.scheduleUpdate(self.config.retryDelay);
           Log.error(self.name + ": Could not fetch tracking numbers.");
         }
       }
@@ -270,7 +271,6 @@ Module.register("MMM-Tracking", {
 
     if(!this.allTrackingSourcesSucceeded) {
       self.scheduleUpdate(self.config.retryDelay);
-      return;
     }
 
     this.show(this.config.animationSpeed, { lockString: this.identifier });
@@ -340,6 +340,7 @@ Module.register("MMM-Tracking", {
           self.trackingSourcesStatus.fedex = "succeeded";
         } else {
           self.trackingSourcesStatus.fedex = "failed";
+          this.trackingResults.fedex["Error: "] = "Could not fetch tracking info.";
           Log.error(self.name + ": Could not fetch fedex tracking info.");
         }
 
@@ -348,6 +349,7 @@ Module.register("MMM-Tracking", {
     };
     fedexTrackingRequest.onerror = function() {
       trackingSourcesStatus.fedex = "failed";
+      this.trackingResults.fedex["Error: "] = "XMLHttpRequest failed.";
       callback();
       Log.error(self.name + ": fedex XMLHttpRequest failed.");
     };
@@ -431,6 +433,7 @@ Module.register("MMM-Tracking", {
           self.trackingSourcesStatus.usps = "succeeded";
         } else {
           self.trackingSourcesStatus.usps = "failed";
+          this.trackingResults.usps["Error: "] = "Could not fetch usps tracking info.";
           Log.error(self.name + ": Could not fetch usps tracking info.");
         }
 
@@ -439,6 +442,7 @@ Module.register("MMM-Tracking", {
     };
     uspsTrackingRequest.onerror = function() {
       trackingSourcesStatus.usps = "failed";
+      this.trackingResults.usps["Error: "] = "XMLHttpRequest failed.";
       callback();
       Log.error(self.name + ": usps XMLHttpRequest failed.");
     };
@@ -469,6 +473,7 @@ Module.register("MMM-Tracking", {
       try{
         trackingNumber = node.querySelector("a").textContent.trim()
       } catch(e) {
+        this.trackingSourcesStatus.ups = "failed";
         trackingNumber = "Unknown" + i;
         Log.error("DOM structure for multiple ups tracking numbers has changed. Could not obtain tracking number.");
       }
@@ -500,10 +505,15 @@ Module.register("MMM-Tracking", {
 
         self.trackingResults.ups[trackingNumber] = deliveryEstimateString;
       } catch(e) {
+        this.trackingSourcesStatus.ups = "failed";
         self.trackingResults.ups[trackingNumber] = "Unexpected Dom Format";
         Log.error("could not determine deliver date for usps tracking number " + trackingNumber + ". This is probably because of an an unexpected DOM format for mulitple ups numbers.")
       }
     });
+
+    if(this.trackingSourcesStatus.ups === "pending") {
+      this.trackingSourcesStatus.ups = "succeeded";
+    }
   },
 
   processUpsTrackingNumbers: function(trackingNumbers) {
