@@ -1,0 +1,23 @@
+{
+  "name": "MMM-Tracking",
+  "version": "1.0.0",
+  "description": "",
+  "main": "MMM-Tracking.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/justinreimer/MMM-Tracking.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/justinreimer/MMM-Tracking/issues"
+  },
+  "homepage": "https://github.com/justinreimer/MMM-Tracking#readme",
+  "dependencies": {
+    "puppeteer": "^5.2.1"
+  }
+}
