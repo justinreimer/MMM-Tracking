@@ -245,16 +245,15 @@ Module.register("MMM-Tracking", {
   },
 
   processTrackingNumbers: function (data) {
-    //TODO: implement UPS and USPS tracking here
-    this.trackingSourcesStatus.ups = "succeeded";
-    this.processUspsTrackingInfo(data.usps, this.carrierProcessingFinishedCallback.bind(this));
-    this.processFedexTrackingInfo(data.fedex, this.carrierProcessingFinishedCallback.bind(this));
+    this.processUpsTrackingNumbers(data.ups, this.carrierProcessingFinishedCallback.bind(this));
+    this.processUspsTrackingNumbers(data.usps, this.carrierProcessingFinishedCallback.bind(this));
+    this.processFedexTrackingNumbers(data.fedex, this.carrierProcessingFinishedCallback.bind(this));
   },
 
-  processFedexTrackingInfo: function (trackingNumbers, callback) {
+  processFedexTrackingNumbers: function (trackingNumbers, callback) {
     if (trackingNumbers.length === 0) {
       this.trackingSourcesStatus.fedex = "succeeded";
-      this.trackingResults.fedex[package.displayTrackingNbr] = package.displayEstDeliveryDateTime;
+      this.trackingResults.fedex = {};
       return;
     }
 
@@ -320,7 +319,7 @@ Module.register("MMM-Tracking", {
     fedexTrackingRequest.send();
   },
 
-  procesUSPSTrackingResponse: function(responseText) {
+  procesUSPSTrackingHtml: function(responseText) {
     parser=new DOMParser();
     var dom = parser.parseFromString(responseText,"text/html");
     
@@ -368,10 +367,10 @@ Module.register("MMM-Tracking", {
     });
   },
 
-  processUspsTrackingInfo: function(trackingNumbers, callback) {
+  processUspsTrackingNumbers: function(trackingNumbers, callback) {
     if (trackingNumbers.length === 0) {
       this.trackingSourcesStatus.usps = "succeeded";
-      this.trackingResults.usps[package.displayTrackingNbr] = package.displayEstDeliveryDateTime;
+      this.trackingResults.usps = {};
       return;
     }
 
@@ -390,7 +389,7 @@ Module.register("MMM-Tracking", {
     uspsTrackingRequest.onreadystatechange = function () {
       if (this.readyState === 4) {
         if (this.status === 200) {
-          self.procesUSPSTrackingResponse(this.responseText);
+          self.procesUSPSTrackingHtml(this.responseText);
           self.trackingSourcesStatus.usps = "succeeded";
         } else {
           self.trackingSourcesStatus.usps = "failed";
@@ -407,6 +406,33 @@ Module.register("MMM-Tracking", {
     };
     uspsTrackingRequest.send();
   },
+
+  processUpsTrackingNumbers: function(trackingNumbers, callback) {
+    if (trackingNumbers.length === 0) {
+      this.trackingSourcesStatus.ups = "succeeded";
+      this.trackingResults.ups = {};
+      return;
+    }
+
+    var url = "https://www.ups.com/track?loc=en_US&tracknum=";
+
+    for(var i = 0; i < trackingNumbers.length; i++) {
+      if(i = length - 1) {
+        url += trackingNumbers[i];
+      } else {
+        url += trackingNumbers[i] + " ";
+      }
+    }
+
+    url += "&requester=WT/tracksummary";
+
+    this.sendSocketNotification("MMM_NETWORKSIGNAL_CHECK_SIGNAL", {
+        {
+          url: "",
+          carrier: "ups"
+        }
+    });
+  }
 
   /* scheduleUpdate()
    * Schedule next update.

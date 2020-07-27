@@ -22,13 +22,18 @@ module.exports = NodeHelper.create({
       .then(function(html) {
         self.sendSocketNotification(
           "MMM_TRACKING_GET_HTML_FOR_URL_SUCCEEDED",
-          html,
+          {
+            html: html,
+            carrier, payload.carrier
+          }
         );
       })
       .catch(function(err) {
         self.sendSocketNotification(
           "MMM_TRACKING_GET_HTML_FOR_URL_FAILED",
-          html,
+          {
+            carrier: payload.carrier
+          }
         );
       });     
     }
