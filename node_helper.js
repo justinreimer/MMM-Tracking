@@ -24,7 +24,7 @@ module.exports = NodeHelper.create({
           "MMM_TRACKING_GET_HTML_FOR_URL_SUCCEEDED",
           {
             html: html,
-            carrier, payload.carrier
+            carrier: payload.carrier
           }
         );
       })

@@ -46,7 +46,7 @@ Module.register("MMM-Tracking", {
         case "ups":
           procesUpsTrackingHtml(payload.html);
           brea;
-        case "usps"
+        case "usps":
           procesUspsTrackingHtml(payload.html);
           break;
         default:
@@ -119,7 +119,7 @@ Module.register("MMM-Tracking", {
     3: "April",
     4: "May",
     5: "June",
-    6: "July"
+    6: "July",
     7: "August",
     8: "September",
     9: "October",
@@ -526,10 +526,8 @@ Module.register("MMM-Tracking", {
     url += "&requester=WT/tracksummary";
 
     this.sendSocketNotification("MMM_TRACKING_GET_HTML_FOR_URL", {
-        {
-          url: "",
-          carrier: "ups"
-        }
+      url: "",
+      carrier: "ups"
     });
   },
 
