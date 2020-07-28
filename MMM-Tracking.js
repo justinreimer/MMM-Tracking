@@ -3,7 +3,7 @@ Module.register("MMM-Tracking", {
   // Default module config.
   defaults: {
     trackingNumbersUrl: "",
-    updateInterval: 60 * 60 * 1000, // every hour
+    updateInterval: 5 * 60 * 1000, // every 5 minutes
     tableClass: "medium",
     lang: config.language,
     animationSpeed: 1000,
@@ -32,6 +32,12 @@ Module.register("MMM-Tracking", {
       usps: []
     };
 
+    this.deliveredPackages = {
+      fedex: [],
+      ups: [],
+      usps: []
+    };
+
     this.trackingSourcesStatus = {
       fedex: "pending",
       ups: "pending",
@@ -39,6 +45,29 @@ Module.register("MMM-Tracking", {
     };
 
     this.scheduleUpdate(this.config.initialLoadDelay);
+  },
+
+  removeDeliveredTrackingNumbers: function() {
+    for(key in this.trackingNumbers) {
+      deliveredPackages[key].forEach(function(package) {
+        var i = this.trackingNumbers[key].indexOf(package);
+        if(i >= 0) {
+          this.trackingNumbers[key].splice(i, 1);
+        }
+      });
+    }
+  },
+
+  markPackageAsDelivered: function(carrier, package) {
+    if(this.deliveredPackages[carrier].indexOf(package) === -1) {
+      this.deliveredPackages[carrier].push(package);
+    }
+  },
+
+  addDeliveredPackagesStatuses: function(carrier) {
+    this.deliveredPackages[carrier].forEach(function(package) {
+      this.trackingResults[carrier][package] = "Delivered";
+    });
   },
 
   // Handle socket answer
@@ -53,9 +82,6 @@ Module.register("MMM-Tracking", {
       switch(payload.carrier) {
         case "ups":
           this.processUpsTrackingHtml(payload.html);
-          break;
-        case "usps":
-          this.processUspsTrackingHtml(payload.html);
           break;
         default:
           break;
@@ -75,9 +101,9 @@ Module.register("MMM-Tracking", {
     }
   },
 
-  allTrackingSourcesCompleted: function() {
+  allTrackingSourcesSucceeded: function() {
     for(key in this.trackingSourcesStatus) {
-      if(this.trackingSourcesStatus[key] === "pending") {
+      if(this.trackingSourcesStatus[key] !== "succeeded") {
         return false;
       }
     }
@@ -85,14 +111,14 @@ Module.register("MMM-Tracking", {
     return true;
   },
 
-  allTrackingSourcesSucceeded: function() {
+  anyTrackingSourcesFailed: function() {
     for(key in this.trackingSourcesStatus) {
-      if(this.trackingSourcesStatus[key] === "pending" || this.trackingSourcesStatus[key] === "failed") {
-        return false;
+      if(this.trackingSourcesStatus[key] === "failed") {
+        return true;
       }
     }
 
-    return true;
+    return false;
   },
 
   getOrdinalSuffix: function(i) {
@@ -195,6 +221,9 @@ Module.register("MMM-Tracking", {
     this.getTableLine(table, carrierName);
 
     if(Object.keys(this.trackingResults[carrier]).length === 0){
+      if(this.trackingSourcesStatus[carrier] === "pending") {
+        this.getTableLine(table, "Pending");
+      }
       this.getTableLine(table, "None");
     } else {
       for(key in this.trackingResults[carrier]) {
@@ -260,6 +289,7 @@ Module.register("MMM-Tracking", {
           self.resetTrackingSourcesStatus();
           self.resetTrackingResults();
           self.trackingNumbers = JSON.parse(this.response);
+          self.removeDeliveredTrackingNumbers();
           self.processTrackingNumbers();
         } else {
           self.scheduleUpdate(self.config.retryDelay);
@@ -271,24 +301,23 @@ Module.register("MMM-Tracking", {
   },
 
   carrierProcessingFinishedCallback: function() {
-    if(!this.allTrackingSourcesCompleted()) {
-      return;
-    }
-
-    if(!this.allTrackingSourcesSucceeded) {
+    if(!this.anyTrackingSourcesFailed) {
       this.scheduleUpdate(self.config.retryDelay);
     }
 
     this.show(this.config.animationSpeed, { lockString: this.identifier });
     this.loaded = true;
-    this.scheduleUpdate();
     this.updateDom(this.config.animationSpeed);
+
+    if(this.allTrackingSourcesSucceeded) {
+      this.scheduleUpdate();
+    }
   },
 
   processTrackingNumbers: function () {    
     this.processUpsTrackingNumbers();
-    this.processUspsTrackingNumbers(this.carrierProcessingFinishedCallback.bind(this));
-    this.processFedexTrackingNumbers(this.carrierProcessingFinishedCallback.bind(this));
+    this.processUspsTrackingNumbers();
+    this.processFedexTrackingNumbers();
   },
 
   processFedexTrackingNumbers: function () {
@@ -337,13 +366,14 @@ Module.register("MMM-Tracking", {
           var result = JSON.parse(this.response);
           result.TrackPackagesResponse.packageList.forEach(function(package) {
             if(package.keyStatus === "Delivered") {
-              self.trackingResults.fedex[package.displayTrackingNbr] = "Delivered";
+              self.markPackageAsDelivered("fedex", package.displayTrackingNbr);
             } else if(package.keyStatus === "In transit") {
               self.trackingResults.fedex[package.displayTrackingNbr] = package.displayEstDeliveryDateTime;
             } else {
               self.trackingResults.fedex[package.displayTrackingNbr] = "Unhandled Status: " + package.keyStatus;
             }
           });
+          self.addDeliveredPackagesStatuses("fedex");
           self.trackingSourcesStatus.fedex = "succeeded";
         } else {
           self.trackingSourcesStatus.fedex = "failed";
@@ -382,7 +412,7 @@ Module.register("MMM-Tracking", {
       }
 
       if(node.getElementsByClassName("delivery_delivered").length) {
-        self.trackingResults.usps[trackingNumber] = "Delivered";
+        self.markPackageAsDelivered("usps", package.displayTrackingNbr);
         return;
       }
 
@@ -412,6 +442,8 @@ Module.register("MMM-Tracking", {
         Log.error("could not determine deliver date for usps tracking number " + trackingNumber + ". This is probably because of an an unexpected DOM format for usps numbers.")
       }
     });
+
+    self.addDeliveredPackagesStatuses("usps");
   },
 
   processUspsTrackingNumbers: function() {
@@ -480,7 +512,6 @@ Module.register("MMM-Tracking", {
       try{
         trackingNumber = node.querySelector("a").textContent.trim()
       } catch(e) {
-        this.trackingSourcesStatus.ups = "failed";
         trackingNumber = "Unknown" + i;
         Log.error("DOM structure for multiple ups tracking numbers has changed. Could not obtain tracking number.");
       }
@@ -488,7 +519,7 @@ Module.register("MMM-Tracking", {
       var deliveryStatusNode = node.querySelector("#stApp_SummaryTracked_packageStatusDesciption_1");
 
       if(deliveryStatusNode && deliveryStatusNode.textContent.trim().toLowerCase() === "delivered") {
-        self.trackingResults.ups[trackingNumber] = "Delivered";
+        self.markPackageAsDelivered("usps", package.displayTrackingNbr);
         return;
       }
 
@@ -515,15 +546,14 @@ Module.register("MMM-Tracking", {
         self.trackingResults.ups[trackingNumber] = deliveryEstimateString;
       } catch(e) {
         Log.error(e);
-        self.trackingSourcesStatus.ups = "failed";
         self.trackingResults.ups[trackingNumber] = "Unexpected Dom Format";
         Log.error("could not determine deliver date for usps tracking number " + trackingNumber + ". This is probably because of an an unexpected DOM format for mulitple ups numbers.")
       }
     });
 
-    if(this.trackingSourcesStatus.ups === "pending") {
-      this.trackingSourcesStatus.ups = "succeeded";
-    }
+    self.addDeliveredPackagesStatuses("ups");
+
+    this.trackingSourcesStatus.ups = "succeeded";
   },
   
   processSingleUpsNumberHtml: function() {
