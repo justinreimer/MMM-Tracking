@@ -445,7 +445,7 @@ Module.register("MMM-Tracking", {
           Log.error(self.name + ": Could not fetch usps tracking info.");
         }
 
-        self.self.carrierProcessingFinishedCallback();
+        self.carrierProcessingFinishedCallback();
       }
     };
     uspsTrackingRequest.onerror = function() {
@@ -498,10 +498,12 @@ Module.register("MMM-Tracking", {
         dateNode.removeChild(statusNode);
 
         var dateString = dateNode.textContent.trim();
-                
+        
+        Log.error("Found date: " + dateString);
+
         var now = new Date();
 
-        var currentYear = new now.getFullYear();
+        var currentYear = now.getFullYear();
 
         var deliveryDate = new Date(currentYear + "/" + dateString);
 
@@ -510,10 +512,11 @@ Module.register("MMM-Tracking", {
           deliveryDate = new Date((currentYear + 1) + "/" + dateString);
         }
 
-        var deliveryEstimateString = self.getDeliveryStringFromDate(deliverDate);
+        var deliveryEstimateString = self.getDeliveryStringFromDate(deliveryDate);
 
         self.trackingResults.ups[trackingNumber] = deliveryEstimateString;
       } catch(e) {
+        Log.error(e);
         self.trackingSourcesStatus.ups = "failed";
         self.trackingResults.ups[trackingNumber] = "Unexpected Dom Format";
         Log.error("could not determine deliver date for usps tracking number " + trackingNumber + ". This is probably because of an an unexpected DOM format for mulitple ups numbers.")
