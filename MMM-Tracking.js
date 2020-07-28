@@ -40,6 +40,7 @@ Module.register("MMM-Tracking", {
     // Care only own socket answers
     if (notification === "MMM_TRACKING_GET_HTML_FOR_URL_FAILED") {
       Log.error("could not fetch html for carrier: " + payload.carrier);
+      Log.error(payload.err);
       this.trackingResults[payload.carrier]["Error: "] = "Could not get html for scraping.";
       this.trackingSourcesStatus[payload.carrier] = "failed";
     } else if (notification === "MMM_TRACKING_GET_HTML_FOR_URL_SUCCEEDED") {
@@ -263,8 +264,6 @@ Module.register("MMM-Tracking", {
   },
 
   carrierProcessingFinishedCallback: function() {
-    Log.info(this);
-    Log.info(self);
     if(!this.allTrackingSourcesCompleted()) {
       return;
     }
@@ -522,21 +521,21 @@ Module.register("MMM-Tracking", {
       this.trackingResults.ups = {};
       return;
     }
-
+    
     var url = "https://www.ups.com/track?loc=en_US&tracknum=";
 
     for(var i = 0; i < trackingNumbers.length; i++) {
-      if(i = length - 1) {
+      if(i === length - 1) {
         url += trackingNumbers[i];
       } else {
-        url += trackingNumbers[i] + " ";
+        url += trackingNumbers[i] + "%20";
       }
     }
 
     url += "&requester=WT/tracksummary";
 
     this.sendSocketNotification("MMM_TRACKING_GET_HTML_FOR_URL", {
-      url: "",
+      url: url,
       carrier: "ups"
     });
   },

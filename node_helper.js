@@ -1,5 +1,5 @@
 const NodeHelper = require("node_helper");
-const ping = require("puppeteer");
+const puppeteer = require("puppeteer");
 
 module.exports = NodeHelper.create({
   start: function() {
@@ -10,7 +10,7 @@ module.exports = NodeHelper.create({
     if (notification === "MMM_TRACKING_GET_HTML_FOR_URL") {
       const self = this;
 
-      puppeteer.launch()
+      puppeteer.launch({ executablePath: "/usr/bin/chromium-browser", headless: true })
       .then(function(browser) {
         return browser.newPage();
       })
@@ -32,7 +32,8 @@ module.exports = NodeHelper.create({
         self.sendSocketNotification(
           "MMM_TRACKING_GET_HTML_FOR_URL_FAILED",
           {
-            carrier: payload.carrier
+            carrier: payload.carrier,
+            err: err
           }
         );
       });     
