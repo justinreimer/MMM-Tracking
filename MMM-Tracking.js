@@ -336,7 +336,7 @@ Module.register("MMM-Tracking", {
         appType:"WTRK",
         appDeviceType:"DESKTOP",
         supportHTML:true,
-        supportCurrfentLocation:true,
+        supportCurrentLocation:true,
         uniqueKey:"",
         processingParameters:{
 
