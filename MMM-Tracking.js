@@ -305,7 +305,7 @@ Module.register("MMM-Tracking", {
         appType:"WTRK",
         appDeviceType:"DESKTOP",
         supportHTML:true,
-        supportCurrentLocation:true,
+        supportCurrfentLocation:true,
         uniqueKey:"",
         processingParameters:{
 
@@ -499,8 +499,6 @@ Module.register("MMM-Tracking", {
 
         var dateString = dateNode.textContent.trim();
         
-        Log.error("Found date: " + dateString);
-
         var now = new Date();
 
         var currentYear = now.getFullYear();
