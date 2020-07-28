@@ -53,7 +53,7 @@ Module.register("MMM-Tracking", {
       switch(payload.carrier) {
         case "ups":
           this.processUpsTrackingHtml(payload.html);
-          brea;
+          break;
         case "usps":
           this.processUspsTrackingHtml(payload.html);
           break;
@@ -485,10 +485,10 @@ Module.register("MMM-Tracking", {
         Log.error("DOM structure for multiple ups tracking numbers has changed. Could not obtain tracking number.");
       }
 
-      var deliveryStatusNode = node.querySelector("#stApp_SummaryTracked_packageStatusDesciption_0");
+      var deliveryStatusNode = node.querySelector("#stApp_SummaryTracked_packageStatusDesciption_1");
 
-      if(deliveryStatusNode && deliveryStatusNode.textContent.trim().toLowerCase === "delivered") {
-        self.trackingResults.usps[trackingNumber] = "Delivered";
+      if(deliveryStatusNode && deliveryStatusNode.textContent.trim().toLowerCase() === "delivered") {
+        self.trackingResults.ups[trackingNumber] = "Delivered";
         return;
       }
 
