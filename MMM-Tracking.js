@@ -25,6 +25,12 @@ Module.register("MMM-Tracking", {
       ups: {},
       usps: {}
     };
+    
+    this.trackingNumbers = {
+      fedex: [],
+      ups: [],
+      usps: []
+    };
 
     this.trackingSourcesStatus = {
       fedex: "pending",
@@ -46,10 +52,10 @@ Module.register("MMM-Tracking", {
     } else if (notification === "MMM_TRACKING_GET_HTML_FOR_URL_SUCCEEDED") {
       switch(payload.carrier) {
         case "ups":
-          procesUpsTrackingHtml(payload.html);
+          this.processUpsTrackingHtml(payload.html);
           brea;
         case "usps":
-          procesUspsTrackingHtml(payload.html);
+          this.processUspsTrackingHtml(payload.html);
           break;
         default:
           break;
@@ -279,6 +285,8 @@ Module.register("MMM-Tracking", {
   },
 
   processTrackingNumbers: function (data) {
+    this.trackingNumbers = data;
+    
     this.processUpsTrackingNumbers(data.ups);
     this.processUspsTrackingNumbers(data.usps, this.carrierProcessingFinishedCallback.bind(this));
     this.processFedexTrackingNumbers(data.fedex, this.carrierProcessingFinishedCallback.bind(this));
@@ -355,7 +363,7 @@ Module.register("MMM-Tracking", {
     fedexTrackingRequest.send();
   },
 
-  procesUspsTrackingHtml: function(responseText) {
+  processUspsTrackingHtml: function(responseText) {
     parser=new DOMParser();
     var dom = parser.parseFromString(responseText,"text/html");
     
@@ -428,7 +436,7 @@ Module.register("MMM-Tracking", {
     uspsTrackingRequest.onreadystatechange = function () {
       if (this.readyState === 4) {
         if (this.status === 200) {
-          self.procesUspsTrackingHtml(this.responseText);
+          self.processUspsTrackingHtml(this.responseText);
           self.trackingSourcesStatus.usps = "succeeded";
         } else {
           self.trackingSourcesStatus.usps = "failed";
@@ -450,9 +458,9 @@ Module.register("MMM-Tracking", {
 
   processUpsTrackingHtml: function(responseText, callback) {
     if(this.trackingNumbers.ups.length > 1) {
-      processMultipleUpsNumbersHtml(responseText);
+      this.processMultipleUpsNumbersHtml(responseText);
     } else {
-      processSingleUpsNumberHtml(responseText);
+      this.processSingleUpsNumberHtml(responseText);
     }
 
     this.carrierProcessingFinishedCallback()
@@ -467,7 +475,6 @@ Module.register("MMM-Tracking", {
     var self = this;
 
     Array.from(trackingResults).forEach(function(node, i) {
-
       var trackingNumber;
       try{
         trackingNumber = node.querySelector("a").textContent.trim()
@@ -488,7 +495,7 @@ Module.register("MMM-Tracking", {
         dateNode.removeChild(statusNode);
 
         var dateString = dateNode.textContent.trim();
-        
+                
         var now = new Date();
 
         var currentYear = new now.getFullYear();
@@ -504,7 +511,7 @@ Module.register("MMM-Tracking", {
 
         self.trackingResults.ups[trackingNumber] = deliveryEstimateString;
       } catch(e) {
-        this.trackingSourcesStatus.ups = "failed";
+        self.trackingSourcesStatus.ups = "failed";
         self.trackingResults.ups[trackingNumber] = "Unexpected Dom Format";
         Log.error("could not determine deliver date for usps tracking number " + trackingNumber + ". This is probably because of an an unexpected DOM format for mulitple ups numbers.")
       }
@@ -513,6 +520,10 @@ Module.register("MMM-Tracking", {
     if(this.trackingSourcesStatus.ups === "pending") {
       this.trackingSourcesStatus.ups = "succeeded";
     }
+  },
+  
+  processSingleUpsNumberHtml: function() {
+    this.trackingSourcesStatus.ups = "succeeded";
   },
 
   processUpsTrackingNumbers: function(trackingNumbers) {

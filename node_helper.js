@@ -9,17 +9,23 @@ module.exports = NodeHelper.create({
   socketNotificationReceived: function(notification, payload) {
     if (notification === "MMM_TRACKING_GET_HTML_FOR_URL") {
       const self = this;
+      
+      var currentPage;
 
       puppeteer.launch({ executablePath: "/usr/bin/chromium-browser", headless: true })
       .then(function(browser) {
         return browser.newPage();
       })
       .then(function(page) {
-        return page.goto(payload.url).then(function() {
-          return page.content();
+        currentPage = page;
+        return currentPage.goto(payload.url, {
+            timeout: 0
+        }).then(function() {
+          return currentPage.content();
         });
       })
       .then(function(html) {
+        currentPage.close();
         self.sendSocketNotification(
           "MMM_TRACKING_GET_HTML_FOR_URL_SUCCEEDED",
           {
@@ -29,6 +35,7 @@ module.exports = NodeHelper.create({
         );
       })
       .catch(function(err) {
+        currentPage.close();
         self.sendSocketNotification(
           "MMM_TRACKING_GET_HTML_FOR_URL_FAILED",
           {
