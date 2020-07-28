@@ -478,7 +478,7 @@ Module.register("MMM-Tracking", {
           self.trackingSourcesStatus.usps = "succeeded";
         } else {
           self.trackingSourcesStatus.usps = "failed";
-          this.trackingResults.usps["Error: "] = "Could not fetch usps tracking info.";
+          self.trackingResults.usps["Error: "] = "Could not fetch usps tracking info.";
           Log.error(self.name + ": Could not fetch usps tracking info.");
         }
 
