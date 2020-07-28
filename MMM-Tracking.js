@@ -259,7 +259,8 @@ Module.register("MMM-Tracking", {
         if (this.status === 200) {
           self.resetTrackingSourcesStatus();
           self.resetTrackingResults();
-          self.processTrackingNumbers(JSON.parse(this.response));
+          self.trackingNumbers = JSON.parse(this.response);
+          self.processTrackingNumbers();
         } else {
           self.scheduleUpdate(self.config.retryDelay);
           Log.error(self.name + ": Could not fetch tracking numbers.");
@@ -275,7 +276,7 @@ Module.register("MMM-Tracking", {
     }
 
     if(!this.allTrackingSourcesSucceeded) {
-      self.scheduleUpdate(self.config.retryDelay);
+      this.scheduleUpdate(self.config.retryDelay);
     }
 
     this.show(this.config.animationSpeed, { lockString: this.identifier });
@@ -284,16 +285,16 @@ Module.register("MMM-Tracking", {
     this.updateDom(this.config.animationSpeed);
   },
 
-  processTrackingNumbers: function (data) {
-    this.trackingNumbers = data;
-    
-    this.processUpsTrackingNumbers(data.ups);
-    this.processUspsTrackingNumbers(data.usps, this.carrierProcessingFinishedCallback.bind(this));
-    this.processFedexTrackingNumbers(data.fedex, this.carrierProcessingFinishedCallback.bind(this));
+  processTrackingNumbers: function () {    
+    this.processUpsTrackingNumbers();
+    this.processUspsTrackingNumbers(this.carrierProcessingFinishedCallback.bind(this));
+    this.processFedexTrackingNumbers(this.carrierProcessingFinishedCallback.bind(this));
   },
 
-  processFedexTrackingNumbers: function (trackingNumbers, callback) {
-    if (trackingNumbers.length === 0) {
+  processFedexTrackingNumbers: function () {
+    var fedexTrackingNumbers = this.trackingNumbers.fedex;
+
+    if (fedexTrackingNumbers.length === 0) {
       this.trackingSourcesStatus.fedex = "succeeded";
       this.trackingResults.fedex = {};
       return;
@@ -313,8 +314,7 @@ Module.register("MMM-Tracking", {
       }
     };
     
-
-    trackingNumbers.forEach(function(trackingNumber){
+    fedexTrackingNumbers.forEach(function(trackingNumber){
       data.TrackPackagesRequest.trackingInfoList.push({
         trackNumberInfo:{
             trackingNumber:"" + trackingNumber,
@@ -351,14 +351,14 @@ Module.register("MMM-Tracking", {
           Log.error(self.name + ": Could not fetch fedex tracking info.");
         }
 
-        callback();
+        self.carrierProcessingFinishedCallback();
       }
     };
     fedexTrackingRequest.onerror = function() {
-      trackingSourcesStatus.fedex = "failed";
-      this.trackingResults.fedex["Error: "] = "XMLHttpRequest failed.";
-      callback();
+      self.trackingSourcesStatus.fedex = "failed";
+      self.trackingResults.fedex["Error: "] = "XMLHttpRequest failed.";
       Log.error(self.name + ": fedex XMLHttpRequest failed.");
+      self.carrierProcessingFinishedCallback();
     };
     fedexTrackingRequest.send();
   },
@@ -414,8 +414,9 @@ Module.register("MMM-Tracking", {
     });
   },
 
-  processUspsTrackingNumbers: function(trackingNumbers, callback) {
-    if (trackingNumbers.length === 0) {
+  processUspsTrackingNumbers: function() {
+    var uspsTrackingNumbers = this.trackingNumbers.usps;
+    if (uspsTrackingNumbers.length === 0) {
       this.trackingSourcesStatus.usps = "succeeded";
       this.trackingResults.usps = {};
       return;
@@ -424,7 +425,7 @@ Module.register("MMM-Tracking", {
     var proxyurl = "https://cors-anywhere.herokuapp.com/";
     var url = "https://tools.usps.com/go/TrackConfirmAction?tRef=fullpage&tLc=3&text28777=&tLabels=";
     
-    trackingNumbers.forEach(function(trackingNumber) {
+    uspsTrackingNumbers.forEach(function(trackingNumber) {
       url += trackingNumber + ","
     });
 
@@ -444,19 +445,19 @@ Module.register("MMM-Tracking", {
           Log.error(self.name + ": Could not fetch usps tracking info.");
         }
 
-        callback();
+        self.self.carrierProcessingFinishedCallback();
       }
     };
     uspsTrackingRequest.onerror = function() {
-      trackingSourcesStatus.usps = "failed";
-      this.trackingResults.usps["Error: "] = "XMLHttpRequest failed.";
-      callback();
+      self.trackingSourcesStatus.usps = "failed";
+      self.trackingResults.usps["Error: "] = "XMLHttpRequest failed.";
       Log.error(self.name + ": usps XMLHttpRequest failed.");
+      self.carrierProcessingFinishedCallback();
     };
     uspsTrackingRequest.send();
   },
 
-  processUpsTrackingHtml: function(responseText, callback) {
+  processUpsTrackingHtml: function(responseText) {
     if(this.trackingNumbers.ups.length > 1) {
       this.processMultipleUpsNumbersHtml(responseText);
     } else {
@@ -484,7 +485,9 @@ Module.register("MMM-Tracking", {
         Log.error("DOM structure for multiple ups tracking numbers has changed. Could not obtain tracking number.");
       }
 
-      if(node.querySelector("#stApp_SummaryTracked_packageStatusDesciption_0").textContent.trim().toLowerCase === "delivered") {
+      var deliveryStatusNode = node.querySelector("#stApp_SummaryTracked_packageStatusDesciption_0");
+
+      if(deliveryStatusNode && deliveryStatusNode.textContent.trim().toLowerCase === "delivered") {
         self.trackingResults.usps[trackingNumber] = "Delivered";
         return;
       }
@@ -526,8 +529,9 @@ Module.register("MMM-Tracking", {
     this.trackingSourcesStatus.ups = "succeeded";
   },
 
-  processUpsTrackingNumbers: function(trackingNumbers) {
-    if (trackingNumbers.length === 0) {
+  processUpsTrackingNumbers: function() {
+    var upsTrackingNumbers = this.trackingNumbers.ups;
+    if (upsTrackingNumbers.length === 0) {
       this.trackingSourcesStatus.ups = "succeeded";
       this.trackingResults.ups = {};
       return;
@@ -535,11 +539,11 @@ Module.register("MMM-Tracking", {
     
     var url = "https://www.ups.com/track?loc=en_US&tracknum=";
 
-    for(var i = 0; i < trackingNumbers.length; i++) {
+    for(var i = 0; i < upsTrackingNumbers.length; i++) {
       if(i === length - 1) {
-        url += trackingNumbers[i];
+        url += upsTrackingNumbers[i];
       } else {
-        url += trackingNumbers[i] + "%20";
+        url += upsTrackingNumbers[i] + "%20";
       }
     }
 
