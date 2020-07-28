@@ -416,8 +416,9 @@ Module.register("MMM-Tracking", {
       if(node.getElementsByClassName("delivery_delivered").length) {
         self.markPackageAsDelivered("usps", trackingNumber);
         return;
-      } else if (node.getElementsByClassName('expected_delivery').length && node.getElementsByClassName('expected_delivery')[0].textContent.trim().indexOf("in transit to the destination")){
+      } else if (node.getElementsByClassName('expected_delivery').length && node.getElementsByClassName('expected_delivery')[0].textContent.trim().indexOf("in transit to the destination") >= 0){
         self.trackingResults.usps[trackingNumber] = "In Transit to destination";
+        return;
       }
 
       try{
