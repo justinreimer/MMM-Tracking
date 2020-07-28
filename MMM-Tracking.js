@@ -49,7 +49,7 @@ Module.register("MMM-Tracking", {
 
   removeDeliveredTrackingNumbers: function() {
     for(key in this.trackingNumbers) {
-      deliveredPackages[key].forEach(function(package) {
+      this.deliveredPackages[key].forEach(function(package) {
         var i = this.trackingNumbers[key].indexOf(package);
         if(i >= 0) {
           this.trackingNumbers[key].splice(i, 1);
@@ -65,8 +65,9 @@ Module.register("MMM-Tracking", {
   },
 
   addDeliveredPackagesStatuses: function(carrier) {
+    var self = this;
     this.deliveredPackages[carrier].forEach(function(package) {
-      this.trackingResults[carrier][package] = "Delivered";
+      self.trackingResults[carrier][package] = "Delivered";
     });
   },
 
@@ -174,7 +175,7 @@ Module.register("MMM-Tracking", {
     var tableRow = document.createElement("tr");
 
     if(!cell2) {
-      if(cell1 === "None") {
+      if(cell1 === "None" || cell1 === "Pending") {
         tableRow.className = "small";
       }
 
@@ -223,8 +224,9 @@ Module.register("MMM-Tracking", {
     if(Object.keys(this.trackingResults[carrier]).length === 0){
       if(this.trackingSourcesStatus[carrier] === "pending") {
         this.getTableLine(table, "Pending");
+      } else {
+        this.getTableLine(table, "None");
       }
-      this.getTableLine(table, "None");
     } else {
       for(key in this.trackingResults[carrier]) {
         this.getTableLine(table, key, this.trackingResults[carrier][key]);
@@ -412,7 +414,7 @@ Module.register("MMM-Tracking", {
       }
 
       if(node.getElementsByClassName("delivery_delivered").length) {
-        self.markPackageAsDelivered("usps", package.displayTrackingNbr);
+        self.markPackageAsDelivered("usps", trackingNumber);
         return;
       }
 
@@ -443,7 +445,7 @@ Module.register("MMM-Tracking", {
       }
     });
 
-    self.addDeliveredPackagesStatuses("usps");
+    this.addDeliveredPackagesStatuses("usps");
   },
 
   processUspsTrackingNumbers: function() {
@@ -496,7 +498,7 @@ Module.register("MMM-Tracking", {
       this.processSingleUpsNumberHtml(responseText);
     }
 
-    this.carrierProcessingFinishedCallback()
+    this.carrierProcessingFinishedCallback();
   },
 
   processMultipleUpsNumbersHtml: function(responseText) {
@@ -519,7 +521,7 @@ Module.register("MMM-Tracking", {
       var deliveryStatusNode = node.querySelector("#stApp_SummaryTracked_packageStatusDesciption_1");
 
       if(deliveryStatusNode && deliveryStatusNode.textContent.trim().toLowerCase() === "delivered") {
-        self.markPackageAsDelivered("usps", package.displayTrackingNbr);
+        self.markPackageAsDelivered("ups", trackingNumber);
         return;
       }
 
@@ -551,7 +553,7 @@ Module.register("MMM-Tracking", {
       }
     });
 
-    self.addDeliveredPackagesStatuses("ups");
+    this.addDeliveredPackagesStatuses("ups");
 
     this.trackingSourcesStatus.ups = "succeeded";
   },
