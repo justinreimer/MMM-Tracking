@@ -596,6 +596,7 @@ Module.register("MMM-Tracking", {
       //TODO: use dom parsing to get devlivery estimate for an actual delivery
     }
 
+    this.addDeliveredPackagesStatuses("ups");
     this.trackingSourcesStatus.ups = "succeeded";
   },
 
