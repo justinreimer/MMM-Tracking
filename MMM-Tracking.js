@@ -515,7 +515,7 @@ Module.register("MMM-Tracking", {
     Array.from(trackingResults).forEach(function(node, i) {
       var trackingNumber;
       try{
-        trackingNumber = node.querySelector("a").textContent.trim()
+        trackingNumber = node.querySelector(".ups-info_edit_txt").textContent.trim()
       } catch(e) {
         trackingNumber = "Unknown" + i;
         Log.error("DOM structure for multiple ups tracking numbers has changed. Could not obtain tracking number.");
@@ -525,6 +525,9 @@ Module.register("MMM-Tracking", {
 
       if(deliveryStatusNode && deliveryStatusNode.textContent.trim().toLowerCase() === "delivered") {
         self.markPackageAsDelivered("ups", trackingNumber);
+        return;
+      } else if(deliveryStatusNode && deliveryStatusNode.textContent.indexOf("No Information Found for this Package")) {
+        self.trackingResults.ups[trackingNumber] = "No Info";
         return;
       }
 
