@@ -526,7 +526,7 @@ Module.register("MMM-Tracking", {
       if(deliveryStatusNode && deliveryStatusNode.textContent.trim().toLowerCase() === "delivered") {
         self.markPackageAsDelivered("ups", trackingNumber);
         return;
-      } else if(deliveryStatusNode && deliveryStatusNode.textContent.indexOf("No Information Found for this Package")) {
+      } else if(deliveryStatusNode && deliveryStatusNode.textContent.indexOf("No Information Found for this Package") >= 0) {
         self.trackingResults.ups[trackingNumber] = "No Info";
         return;
       }
