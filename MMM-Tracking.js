@@ -48,6 +48,7 @@ Module.register("MMM-Tracking", {
   },
 
   removeDeliveredTrackingNumbers: function() {
+    //remove any tracking numbers that have already been marked as delivered
     for(key in this.trackingNumbers) {
       this.deliveredPackages[key].forEach(function(package) {
         var i = this.trackingNumbers[key].indexOf(package);
@@ -55,6 +56,21 @@ Module.register("MMM-Tracking", {
           this.trackingNumbers[key].splice(i, 1);
         }
       });
+    }
+
+    try {
+      //remove any delivered numbers that are no longer in the dropbox file
+      for(key in this.deliveredPackages) {
+        //iterate over array backwards. That way we can remove items from the array without affect future item's indices
+        for(var i = this.deliveredPackages[key].length - 1; i >= 0; i++) {
+          var j = this.trackingNumbers[key].indexOf(this.deliveredPackages[key][i]);
+          if(j >= 0) {
+            this.this.deliveredPackages[key].splice(i, 1);
+          }
+        }
+      }
+    } catch (e) {
+      console.log("Error: something happened while trying to remove old delivered packages.");
     }
   },
 
