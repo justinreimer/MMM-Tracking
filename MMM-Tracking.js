@@ -580,7 +580,7 @@ Module.register("MMM-Tracking", {
     this.trackingSourcesStatus.ups = "succeeded";
   },
   
-  processSingleUpsNumberHtml: function() {
+  processSingleUpsNumberHtml: function(responseText) {
     parser = new DOMParser();
     var dom = parser.parseFromString(responseText,"text/html");
 
