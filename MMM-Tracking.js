@@ -48,12 +48,13 @@ Module.register("MMM-Tracking", {
   },
 
   removeDeliveredTrackingNumbers: function() {
+    var self = this;
     //remove any tracking numbers that have already been marked as delivered
     for(key in this.trackingNumbers) {
       this.deliveredPackages[key].forEach(function(package) {
-        var i = this.trackingNumbers[key].indexOf(package);
+        var i = self.trackingNumbers[key].indexOf(package);
         if(i >= 0) {
-          this.trackingNumbers[key].splice(i, 1);
+          self.trackingNumbers[key].splice(i, 1);
         }
       });
     }
@@ -65,7 +66,7 @@ Module.register("MMM-Tracking", {
         for(var i = this.deliveredPackages[key].length - 1; i >= 0; i++) {
           var j = this.trackingNumbers[key].indexOf(this.deliveredPackages[key][i]);
           if(j >= 0) {
-            this.this.deliveredPackages[key].splice(i, 1);
+            this.deliveredPackages[key].splice(i, 1);
           }
         }
       }
@@ -131,6 +132,16 @@ Module.register("MMM-Tracking", {
   anyTrackingSourcesFailed: function() {
     for(key in this.trackingSourcesStatus) {
       if(this.trackingSourcesStatus[key] === "failed") {
+        return true;
+      }
+    }
+
+    return false;
+  },
+
+  anyTrackingSourcesPending: function() {
+    for(key in this.trackingSourcesStatus) {
+      if(this.trackingSourcesStatus[key] === "pending") {
         return true;
       }
     }
@@ -319,17 +330,20 @@ Module.register("MMM-Tracking", {
   },
 
   carrierProcessingFinishedCallback: function() {
-    if(!this.anyTrackingSourcesFailed) {
-      this.scheduleUpdate(self.config.retryDelay);
+    //wait for all carierers to either succeed or fail before scheduling next update
+    if(!this.anyTrackingSourcesPending()) {
+      if(this.allTrackingSourcesSucceeded) {
+        //if they all pass, use default retry delay (5 minutes)
+        this.scheduleUpdate();
+      } else {
+        //if any of them fail, use shorter retry delay of 2.5 seconds
+        this.scheduleUpdate(self.config.retryDelay);
+      }
     }
 
     this.show(this.config.animationSpeed, { lockString: this.identifier });
     this.loaded = true;
     this.updateDom(this.config.animationSpeed);
-
-    if(this.allTrackingSourcesSucceeded) {
-      this.scheduleUpdate();
-    }
   },
 
   processTrackingNumbers: function () {    
@@ -626,8 +640,7 @@ Module.register("MMM-Tracking", {
     });
   },
 
-  /* scheduleUpdate()
-   * Schedule next update.
+  /* Schedule next update.
    *
    * argument delay number - Milliseconds before next update. If empty, this.config.updateInterval is used.
    */
