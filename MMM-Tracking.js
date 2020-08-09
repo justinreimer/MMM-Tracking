@@ -583,14 +583,15 @@ Module.register("MMM-Tracking", {
   processSingleUpsNumberHtml: function(responseText) {
     parser = new DOMParser();
     var dom = parser.parseFromString(responseText,"text/html");
+    var body = dom.body;
 
     //single tracking number case means that we can just grab the number from our list of stored numbers instead of parsing the DOM
     var trackingNumber = this.trackingNumbers.ups[0];
 
-    if(dom.textContent.indexOf("Delivered") >= 0) {
+    if(body.textContent.indexOf("Delivered") >= 0) {
       this.markPackageAsDelivered("ups", trackingNumber);
       return;
-    } else if(dom.textContent.indexOf("could not locate the shipment details for this tracking number") >= 0) {
+    } else if(body.textContent.indexOf("could not locate the shipment details for this tracking number") >= 0) {
       this.trackingResults.ups[trackingNumber] = "No Info";
       return;
     }
