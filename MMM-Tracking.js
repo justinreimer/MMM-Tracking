@@ -590,13 +590,11 @@ Module.register("MMM-Tracking", {
 
     if(body.textContent.indexOf("Delivered") >= 0) {
       this.markPackageAsDelivered("ups", trackingNumber);
-      return;
     } else if(body.textContent.indexOf("could not locate the shipment details for this tracking number") >= 0) {
       this.trackingResults.ups[trackingNumber] = "No Info";
-      return;
+    } else {
+      //TODO: use dom parsing to get devlivery estimate for an actual delivery
     }
-
-    //TODO: use dom parsing to get devlivery estimate for an actual delivery
 
     this.trackingSourcesStatus.ups = "succeeded";
   },
