@@ -1,5 +1,6 @@
 const NodeHelper = require("node_helper");
 const puppeteer = require("puppeteer");
+const browserInstance = puppeteer.launch({ executablePath: "/usr/bin/chromium-browser", headless: true });
 
 module.exports = NodeHelper.create({
   start: function() {
@@ -12,8 +13,7 @@ module.exports = NodeHelper.create({
       
       var currentPage;
 
-      puppeteer.launch({ executablePath: "/usr/bin/chromium-browser", headless: true })
-      .then(function(browser) {
+      browserInstance.then(function(browser) {
         return browser.newPage();
       })
       .then(function(page) {
