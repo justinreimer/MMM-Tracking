@@ -607,7 +607,18 @@ Module.register("MMM-Tracking", {
     } else if(body.textContent.indexOf("could not locate the shipment details for this tracking number") >= 0) {
       this.trackingResults.ups[trackingNumber] = "No Info";
     } else {
-      //TODO: use dom parsing to get devlivery estimate for an actual delivery
+      try {
+        var deliveryDateNode = dom.querySelector("span#stApp_scheduledDelivery.ups-txt_block");
+        var deliveryDateText = deliveryDateNode.textContent.trim();
+        var deliveryDate = new Date(deliveryDateText);
+        var deliveryEstimateString = this.getDeliveryStringFromDate(deliveryDate);
+
+        self.trackingResults.ups[trackingNumber] = deliveryEstimateString;
+      } catch(e) {
+        Log.error(e);
+        self.trackingResults.ups[trackingNumber] = "Unexpected Dom Format";
+        Log.error("could not determine deliver date for single usps tracking number " + trackingNumber + ". This is probably because of an an unexpected DOM format for mulitple ups numbers.")
+      }
     }
 
     this.addDeliveredPackagesStatuses("ups");
