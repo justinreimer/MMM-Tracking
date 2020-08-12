@@ -613,10 +613,10 @@ Module.register("MMM-Tracking", {
         var deliveryDate = new Date(deliveryDateText);
         var deliveryEstimateString = this.getDeliveryStringFromDate(deliveryDate);
 
-        self.trackingResults.ups[trackingNumber] = deliveryEstimateString;
+        this.trackingResults.ups[trackingNumber] = deliveryEstimateString;
       } catch(e) {
         Log.error(e);
-        self.trackingResults.ups[trackingNumber] = "Unexpected Dom Format";
+        this.trackingResults.ups[trackingNumber] = "Unexpected Dom Format";
         Log.error("could not determine deliver date for single usps tracking number " + trackingNumber + ". This is probably because of an an unexpected DOM format for mulitple ups numbers.")
       }
     }
