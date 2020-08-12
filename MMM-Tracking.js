@@ -551,12 +551,10 @@ Module.register("MMM-Tracking", {
         Log.error("DOM structure for multiple ups tracking numbers has changed. Could not obtain tracking number.");
       }
 
-      var deliveryStatusNode = node.querySelector("#stApp_SummaryTracked_packageStatusDesciption_1");
-
-      if(deliveryStatusNode && deliveryStatusNode.textContent.trim().toLowerCase() === "delivered") {
+      if(node.textContent.trim().indexOf("Delivered") >= 0) {
         self.markPackageAsDelivered("ups", trackingNumber);
         return;
-      } else if(deliveryStatusNode && deliveryStatusNode.textContent.indexOf("No Information Found for this Package") >= 0) {
+      } else if(node.textContent.indexOf("No Information Found for this Package") >= 0) {
         self.trackingResults.ups[trackingNumber] = "No Info";
         return;
       }
